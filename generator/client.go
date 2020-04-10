@@ -34,7 +34,12 @@ int to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}} e
 	throw Exception("Unknown enum value: $e");
 }
 
-{{.ParentMessageName}}{{.Name}} from{{.ParentMessageName}}{{.Name}}JsonValue(int j) {
+{{.ParentMessageName}}{{.Name}} from{{.ParentMessageName}}{{.Name}}JsonValue(dynamic j) {
+	if (j is String) {
+		j = int.parse(j);
+	} else if (val is num) {
+		j = j.toInt();
+	}
 	{{range .Values}}
 		if (j == {{.Value}}) return {{.ParentMessageName}}{{.EnumName}}.{{.Name}};
 	{{end}}
@@ -124,7 +129,7 @@ class {{.Name}} {
 		{{- else if and .IsRepeated .IsMessage}}
 		map['{{.JSONName}}'] = {{.Name}}?.map((l) => l.toJson())?.toList();
 		{{- else if and .IsRepeated .IsEnum}}
-		map['{{.JSONName}}'] = {{.Name}}?.map((l) => to{{.Type}}JsonValue(l))?.toList();
+		map['{{.JSONName}}'] = {{.Name}}?.map((l) => to{{.InternalType}}JsonValue(l))?.toList();
 		{{- else if .IsRepeated }}
 		map['{{.JSONName}}'] = {{.Name}}?.map((l) => l)?.toList();
 		{{- else if and (.IsMessage) (eq .Type "DateTime")}}
