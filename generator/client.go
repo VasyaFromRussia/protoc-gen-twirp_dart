@@ -24,10 +24,10 @@ import '{{.Path}}';
 enum {{.ParentMessageName}}{{.Name}} {
 	{{range .Values}}
 		{{.Name}},
-	{{end}});
+	{{end}}
 }
 
-String to{{.ParentMessageName}}{{.Name}}JsonValue({{.Name}} e) {
+String to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}} e) {
 	{{range .Values}}
 		if (e == {{.ParentMessageName}}{{.EnumName}}.{{.Name}}) return "{{.Name}}";
 	{{end}}
@@ -60,7 +60,9 @@ class {{.Name}} {
 			{{if .IsMap}}
 			var {{.Name}}Map = new {{.Type}}();
 			(json['{{.JSONName}}'] as Map<String, dynamic>)?.forEach((key, val) {
-				{{if .MapValueField.IsMessage}}
+				{{if .MapValueField.IsEnum}}
+				{{.Name}}Map[key] = from{{.MapValueField.Type}}JsonValue(val);
+				{{else if .MapValueField.IsMessage}}
 				{{.Name}}Map[key] = new {{.MapValueField.Type}}.fromJson(val as Map<String,dynamic>);
 				{{else}}
 				if (val is String) {
@@ -92,13 +94,21 @@ class {{.Name}} {
           ? (json['{{.JSONName}}'] as List)
               .map((d) => new {{.InternalType}}.fromJson(d))
               .toList()
-          : <{{.InternalType}}>[],
+		  : <{{.InternalType}}>[],
+		{{else if and .IsRepeated .IsEnum}}
+		  json['{{.JSONName}}'] != null
+			? (json['{{.JSONName}}'] as List)
+				.map((d) => from{{.InternalType}}JsonValue(d))
+				.toList()
+			: <{{.InternalType}}>[],
 		{{else if .IsRepeated }}
 		json['{{.JSONName}}'] != null ? (json['{{.JSONName}}'] as List).cast<{{.InternalType}}>() : <{{.InternalType}}>[],
 		{{else if and (.IsMessage) (eq .Type "DateTime")}}
 		{{.Type}}.tryParse(json['{{.JSONName}}']),
 		{{else if .IsMessage}}
 		new {{.Type}}.fromJson(json['{{.JSONName}}']),
+		{{else if .isEnum}}
+		from{{.Type}}JsonValue(json['{{.JSONName}}']),
 		{{else}}
 		json['{{.JSONName}}'] as {{.Type}}, 
 		{{- end}}
@@ -113,12 +123,16 @@ class {{.Name}} {
 		map['{{.JSONName}}'] = json.decode(json.encode({{.Name}}));
 		{{- else if and .IsRepeated .IsMessage}}
 		map['{{.JSONName}}'] = {{.Name}}?.map((l) => l.toJson())?.toList();
+		{{- else if and .IsRepeated .IsEnum}}
+		map['{{.JSONName}}'] = {{.Name}}?.map((l) => to{{.Type}}JsonValue(l))?.toList();
 		{{- else if .IsRepeated }}
 		map['{{.JSONName}}'] = {{.Name}}?.map((l) => l)?.toList();
 		{{- else if and (.IsMessage) (eq .Type "DateTime")}}
 		map['{{.JSONName}}'] = {{.Name}}.toIso8601String();
 		{{- else if .IsMessage}}
 		map['{{.JSONName}}'] = {{.Name}}.toJson();
+		{{- else if .IsEnum}}
+		map['{{.JSONName}}'] = to{{.Type}}JsonValue({{.Name}});
 		{{- else}}
     	map['{{.JSONName}}'] = {{.Name}};
     	{{- end}}
@@ -216,6 +230,7 @@ type ModelField struct {
 	IsMap         bool
 	MapKeyField   *ModelField
 	MapValueField *ModelField
+	IsEnum        bool
 }
 
 type Service struct {
@@ -490,7 +505,7 @@ func newField(f *descriptor.FieldDescriptorProto,
 	m *descriptor.DescriptorProto,
 	d *descriptor.FileDescriptorProto,
 	gen *generator.Generator) ModelField {
-	dartType, internalType, jsonType := protoToDartType(f)
+	dartType, internalType, jsonType := protoToDartType(f, m)
 	fieldName := f.GetName()
 	jsonName := camelCase(fieldName)
 	name := camelCase(fieldName)
@@ -518,6 +533,7 @@ func newField(f *descriptor.FieldDescriptorProto,
 		}
 	}
 	field.IsMessage = f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE
+	field.IsEnum = f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM
 	field.IsRepeated = isRepeated(f)
 
 	return field
@@ -525,12 +541,17 @@ func newField(f *descriptor.FieldDescriptorProto,
 
 // generates the (Type, JSONType) tuple for a ModelField so marshal/unmarshal functions
 // will work when converting between TS interfaces and protobuf JSON.
-func protoToDartType(f *descriptor.FieldDescriptorProto) (string, string, string) {
+func protoToDartType(f *descriptor.FieldDescriptorProto, m *descriptor.DescriptorProto) (string, string, string) {
 	dartType := "String"
 	jsonType := "string"
 	internalType := "String"
 
 	switch f.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		name := f.GetTypeName()
+		dartType = removePkg(m.GetName()) + removePkg(name)
+		jsonType = "string"
+		break
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		dartType = "double"
 		jsonType = "number"
