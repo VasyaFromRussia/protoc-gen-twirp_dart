@@ -21,22 +21,22 @@ import '{{.Path}}';
 {{- end}}
 
 {{range .Enums}}
-enum {{.Name}} {
+enum {{.ParentMessageName}}{{.Name}} {
 	{{range .Values}}
 		{{.Name}},
 	{{end}});
 }
 
-String to{{.Name}}JsonValue({{.Name}} e) {
+String to{{.ParentMessageName}}{{.Name}}JsonValue({{.Name}} e) {
 	{{range .Values}}
-		if (e == {{.EnumName}}.{{.Name}}) return "{{.Name}}";
+		if (e == {{.ParentMessageName}}{{.EnumName}}.{{.Name}}) return "{{.Name}}";
 	{{end}}
 	throw Exception("Unknown enum value: $e");
 }
 
-String from{{.Name}}JsonValue(String j) {
+String from{{.ParentMessageName}}{{.Name}}JsonValue(String j) {
 	{{range .Values}}
-		if (j == "{{.Name}}") return {{.EnumName}}.{{.Name}};
+		if (j == "{{.Name}}") return {{.ParentMessageName}}{{.EnumName}}.{{.Name}};
 	{{end}}
 	throw Exception("Unknown json value: $j");
 }
@@ -185,14 +185,16 @@ class Default{{.Name}} implements {{.Name}} {
 `
 
 type EnumValue struct {
-	EnumName string
-	Name     string
-	Value    int32
+	EnumName          string
+	Name              string
+	Value             int32
+	ParentMessageName string
 }
 
 type Enum struct {
-	Name   string
-	Values []EnumValue
+	Name              string
+	Values            []EnumValue
+	ParentMessageName string
 }
 
 type Model struct {
@@ -370,15 +372,16 @@ func CreateClientAPI(d *descriptor.FileDescriptorProto, generator *generator.Gen
 
 	for _, e := range d.GetEnumType() {
 		enum := &Enum{
-			Name: e.GetName(),
+			Name:              e.GetName(),
+			ParentMessageName: "",
 		}
 		for _, v := range e.GetValue() {
 			enum.Values = append(enum.Values, EnumValue{
-				EnumName: e.GetName(),
-				Name:     *v.Name,
-				Value:    *v.Number,
+				EnumName:          e.GetName(),
+				Name:              *v.Name,
+				Value:             *v.Number,
+				ParentMessageName: "",
 			})
-			log.Fatalf("Added value %s.%s", e.GetName(), *v.Name)
 		}
 		ctx.AddEnum(enum)
 	}
@@ -394,6 +397,21 @@ func CreateClientAPI(d *descriptor.FileDescriptorProto, generator *generator.Gen
 		}
 		ctx.AddModel(model)
 
+		for _, e := range m.GetEnumType() {
+			enum := &Enum{
+				Name:              e.GetName(),
+				ParentMessageName: m.GetName(),
+			}
+			for _, v := range e.GetValue() {
+				enum.Values = append(enum.Values, EnumValue{
+					EnumName:          e.GetName(),
+					Name:              *v.Name,
+					Value:             *v.Number,
+					ParentMessageName: m.GetName(),
+				})
+			}
+			ctx.AddEnum(enum)
+		}
 	}
 
 	// Parse all Services for generating typescript method interfaces and default client implementations
