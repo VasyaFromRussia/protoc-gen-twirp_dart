@@ -552,7 +552,7 @@ func protoToDartType(f *descriptor.FieldDescriptorProto, m *descriptor.Descripto
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		name := f.GetTypeName()
 		dartType = removePkg(m.GetName()) + removePkg(name)
-		jsonType = "number"
+		jsonType = "string"
 		break
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		dartType = "double"
