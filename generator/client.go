@@ -37,7 +37,7 @@ int to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}} e
 {{.ParentMessageName}}{{.Name}} from{{.ParentMessageName}}{{.Name}}JsonValue(dynamic j) {
 	if (j is String) {
 		j = int.parse(j);
-	} else if (val is num) {
+	} else if (j is num) {
 		j = j.toInt();
 	}
 	{{range .Values}}
