@@ -378,7 +378,7 @@ func CreateClientAPI(d *descriptor.FileDescriptorProto, generator *generator.Gen
 				Name:     *v.Name,
 				Value:    *v.Number,
 			})
-			log.Println("Added value %s.%s", e.GetName(), *v.Name)
+			log.Fatalf("Added value %s.%s", e.GetName(), *v.Name)
 		}
 		ctx.AddEnum(enum)
 	}
