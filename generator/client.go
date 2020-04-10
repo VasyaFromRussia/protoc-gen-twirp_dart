@@ -107,7 +107,7 @@ class {{.Name}} {
 		{{.Type}}.tryParse(json['{{.JSONName}}']),
 		{{else if .IsMessage}}
 		new {{.Type}}.fromJson(json['{{.JSONName}}']),
-		{{else if .isEnum}}
+		{{else if .IsEnum}}
 		from{{.Type}}JsonValue(json['{{.JSONName}}']),
 		{{else}}
 		json['{{.JSONName}}'] as {{.Type}}, 
