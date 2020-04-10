@@ -27,16 +27,16 @@ enum {{.ParentMessageName}}{{.Name}} {
 	{{end}}
 }
 
-String to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}} e) {
+int to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}} e) {
 	{{range .Values}}
-		if (e == {{.ParentMessageName}}{{.EnumName}}.{{.Name}}) return "{{.Name}}";
+		if (e == {{.ParentMessageName}}{{.EnumName}}.{{.Name}}) return {{.Value}};
 	{{end}}
 	throw Exception("Unknown enum value: $e");
 }
 
-String from{{.ParentMessageName}}{{.Name}}JsonValue(String j) {
+{{.ParentMessageName}}{{.Name}} from{{.ParentMessageName}}{{.Name}}JsonValue(int j) {
 	{{range .Values}}
-		if (j == "{{.Name}}") return {{.ParentMessageName}}{{.EnumName}}.{{.Name}};
+		if (j == {{.Value}}) return {{.ParentMessageName}}{{.EnumName}}.{{.Name}};
 	{{end}}
 	throw Exception("Unknown json value: $j");
 }
@@ -550,7 +550,7 @@ func protoToDartType(f *descriptor.FieldDescriptorProto, m *descriptor.Descripto
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		name := f.GetTypeName()
 		dartType = removePkg(m.GetName()) + removePkg(name)
-		jsonType = "string"
+		jsonType = "number"
 		break
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		dartType = "double"
