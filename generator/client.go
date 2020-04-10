@@ -22,15 +22,15 @@ import '{{.Path}}';
 
 {{range .Enums}}
 enum {{.ParentMessageName}}{{.Name}} {
-	{{range .Values}}
+	{{- range .Values -}}
 		{{.Name}},
-	{{end}}
+	{{- end}}
 }
 
 int to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}} e) {
-	{{range .Values}}
+	{{- range .Values -}}
 		if (e == {{.ParentMessageName}}{{.EnumName}}.{{.Name}}) return {{.Value}};
-	{{end}}
+	{{- end}}
 	throw Exception("Unknown enum value: $e");
 }
 
