@@ -28,10 +28,12 @@ enum {{.ParentMessageName}}{{.Name}} {
 }
 
 int to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}} e) {
+	switch(e) {
 	{{- range .Values -}}
-		if (e == {{.ParentMessageName}}{{.EnumName}}.{{.Name}}) return {{.Value}};
+		case {{.ParentMessageName}}{{.EnumName}}.{{.Name}}: return {{.Value}};
 	{{- end}}
-	throw Exception("Unknown enum value: $e");
+		default: throw Exception("Unknown enum value: $e");
+	}
 }
 
 {{.ParentMessageName}}{{.Name}} from{{.ParentMessageName}}{{.Name}}JsonValue(dynamic j) {
@@ -40,9 +42,9 @@ int to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}} e
 	} else if (j is num) {
 		j = j.toInt();
 	}
-	{{range .Values}}
-		if (j == {{.Value}}) return {{.ParentMessageName}}{{.EnumName}}.{{.Name}};
-	{{end}}
+	{{- range .Values -}}
+	if (j == {{.Value}}) return {{.ParentMessageName}}{{.EnumName}}.{{.Name}};
+	{{- end}}
 	throw Exception("Unknown json value: $j");
 }
 {{end}}
