@@ -27,23 +27,18 @@ enum {{.ParentMessageName}}{{.Name}} {
 	{{- end}}
 }
 
-int to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}} e) {
+String to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}} e) {
 	switch(e) {
 	{{- range .Values -}}
-		case {{.ParentMessageName}}{{.EnumName}}.{{.Name}}: return {{.Value}};
+		case {{.ParentMessageName}}{{.EnumName}}.{{.Name}}: return "{{.Name}}";
 	{{- end}}
 		default: throw Exception("Unknown enum value: $e");
 	}
 }
 
-{{.ParentMessageName}}{{.Name}} from{{.ParentMessageName}}{{.Name}}JsonValue(dynamic j) {
-	if (j is String) {
-		j = int.parse(j);
-	} else if (j is num) {
-		j = j.toInt();
-	}
+{{.ParentMessageName}}{{.Name}} from{{.ParentMessageName}}{{.Name}}JsonValue(String j) {
 	{{- range .Values -}}
-	if (j == {{.Value}}) return {{.ParentMessageName}}{{.EnumName}}.{{.Name}};
+	if (j == "{{.Name}}") return {{.ParentMessageName}}{{.EnumName}}.{{.Name}};
 	{{- end}}
 	throw Exception("Unknown json value: $j");
 }
