@@ -233,6 +233,7 @@ type ServiceMethod struct {
 func NewAPIContext() APIContext {
 	ctx := APIContext{}
 	ctx.modelLookup = make(map[string]*Model)
+	ctx.enumLookup = make(map[string]*Enum)
 
 	return ctx
 }
