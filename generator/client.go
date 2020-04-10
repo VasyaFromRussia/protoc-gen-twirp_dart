@@ -20,6 +20,28 @@ const apiTemplate = `
 import '{{.Path}}';
 {{- end}}
 
+{{range .Enums}}
+enum {{.Name}} {
+	{{range .Values}}
+		{{.Name}},
+	{{end}});
+}
+
+String to{{.Name}}JsonValue({{.Name}} e) {
+	{{range .Values}}
+		if (e == {{.EnumName}}.{{.Name}}) return "{{.Name}}";
+	{{end}}
+	throw Exception("Unknown enum value: $e");
+}
+
+String from{{.Name}}JsonValue(String j) {
+	{{range .Values}}
+		if (j == "{{.Name}}") return {{.EnumName}}.{{.Name}};
+	{{end}}
+	throw Exception("Unknown json value: $j");
+}
+{{end}}
+
 {{- range .Models}}
 {{- if not .Primitive}}
 class {{.Name}} {
@@ -162,6 +184,17 @@ class Default{{.Name}} implements {{.Name}} {
 
 `
 
+type EnumValue struct {
+	EnumName string
+	Name     string
+	Value    int32
+}
+
+type Enum struct {
+	Name   string
+	Values []EnumValue
+}
+
 type Model struct {
 	Name         string
 	Primitive    bool
@@ -205,14 +238,21 @@ func NewAPIContext() APIContext {
 }
 
 type APIContext struct {
+	Enums       []*Enum
 	Models      []*Model
 	Services    []*Service
 	Imports     []Import
 	modelLookup map[string]*Model
+	enumLookup  map[string]*Enum
 }
 
 type Import struct {
 	Path string
+}
+
+func (ctx *APIContext) AddEnum(e *Enum) {
+	ctx.Enums = append(ctx.Enums, e)
+	ctx.enumLookup[e.Name] = e
 }
 
 func (ctx *APIContext) AddModel(m *Model) {
@@ -324,6 +364,22 @@ func (ctx *APIContext) enableUnmarshal(m *Model) {
 func CreateClientAPI(d *descriptor.FileDescriptorProto, generator *generator.Generator) (*plugin_go.CodeGeneratorResponse_File, error) {
 	ctx := NewAPIContext()
 	pkg := d.GetPackage()
+
+	// Parse all the enums
+
+	for _, e := range d.GetEnumType() {
+		enum := &Enum{
+			Name: e.GetName(),
+		}
+		for _, v := range e.GetValue() {
+			enum.Values = append(enum.Values, EnumValue{
+				EnumName: e.GetName(),
+				Name:     *v.Name,
+				Value:    *v.Number,
+			})
+		}
+		ctx.AddEnum(enum)
+	}
 
 	// Parse all Messages for generating typescript interfaces
 
