@@ -20,6 +20,30 @@ const apiTemplate = `
 import '{{.Path}}';
 {{- end}}
 
+{{range .Enums}}
+enum {{.ParentMessageName}}{{.Name}} {
+	{{- range .Values -}}
+		{{.Name}},
+	{{- end}}
+}
+
+String to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}} e) {
+	switch(e) {
+	{{- range .Values -}}
+		case {{.ParentMessageName}}{{.EnumName}}.{{.Name}}: return "{{.Name}}";
+	{{- end}}
+		default: throw Exception("Unknown enum value: $e");
+	}
+}
+
+{{.ParentMessageName}}{{.Name}} from{{.ParentMessageName}}{{.Name}}JsonValue(String j) {
+	{{- range .Values -}}
+	if (j == "{{.Name}}") return {{.ParentMessageName}}{{.EnumName}}.{{.Name}};
+	{{- end}}
+	throw Exception("Unknown json value: $j");
+}
+{{end}}
+
 {{- range .Models}}
 {{- if not .Primitive}}
 class {{.Name}} {
@@ -38,7 +62,9 @@ class {{.Name}} {
 			{{if .IsMap}}
 			var {{.Name}}Map = new {{.Type}}();
 			(json['{{.JSONName}}'] as Map<String, dynamic>)?.forEach((key, val) {
-				{{if .MapValueField.IsMessage}}
+				{{if .MapValueField.IsEnum}}
+				{{.Name}}Map[key] = from{{.MapValueField.Type}}JsonValue(val);
+				{{else if .MapValueField.IsMessage}}
 				{{.Name}}Map[key] = new {{.MapValueField.Type}}.fromJson(val as Map<String,dynamic>);
 				{{else}}
 				if (val is String) {
@@ -70,13 +96,21 @@ class {{.Name}} {
           ? (json['{{.JSONName}}'] as List)
               .map((d) => new {{.InternalType}}.fromJson(d))
               .toList()
-          : <{{.InternalType}}>[],
+		  : <{{.InternalType}}>[],
+		{{else if and .IsRepeated .IsEnum}}
+		  json['{{.JSONName}}'] != null
+			? (json['{{.JSONName}}'] as List)
+				.map((d) => from{{.InternalType}}JsonValue(d))
+				.toList()
+			: <{{.InternalType}}>[],
 		{{else if .IsRepeated }}
 		json['{{.JSONName}}'] != null ? (json['{{.JSONName}}'] as List).cast<{{.InternalType}}>() : <{{.InternalType}}>[],
 		{{else if and (.IsMessage) (eq .Type "DateTime")}}
 		{{.Type}}.tryParse(json['{{.JSONName}}']),
 		{{else if .IsMessage}}
 		new {{.Type}}.fromJson(json['{{.JSONName}}']),
+		{{else if .IsEnum}}
+		from{{.Type}}JsonValue(json['{{.JSONName}}']),
 		{{else}}
 		json['{{.JSONName}}'] as {{.Type}}, 
 		{{- end}}
@@ -91,12 +125,16 @@ class {{.Name}} {
 		map['{{.JSONName}}'] = json.decode(json.encode({{.Name}}));
 		{{- else if and .IsRepeated .IsMessage}}
 		map['{{.JSONName}}'] = {{.Name}}?.map((l) => l.toJson())?.toList();
+		{{- else if and .IsRepeated .IsEnum}}
+		map['{{.JSONName}}'] = {{.Name}}?.map((l) => to{{.InternalType}}JsonValue(l))?.toList();
 		{{- else if .IsRepeated }}
 		map['{{.JSONName}}'] = {{.Name}}?.map((l) => l)?.toList();
 		{{- else if and (.IsMessage) (eq .Type "DateTime")}}
 		map['{{.JSONName}}'] = {{.Name}}.toIso8601String();
 		{{- else if .IsMessage}}
 		map['{{.JSONName}}'] = {{.Name}}.toJson();
+		{{- else if .IsEnum}}
+		map['{{.JSONName}}'] = to{{.Type}}JsonValue({{.Name}});
 		{{- else}}
     	map['{{.JSONName}}'] = {{.Name}};
     	{{- end}}
@@ -162,6 +200,19 @@ class Default{{.Name}} implements {{.Name}} {
 
 `
 
+type EnumValue struct {
+	EnumName          string
+	Name              string
+	Value             int32
+	ParentMessageName string
+}
+
+type Enum struct {
+	Name              string
+	Values            []EnumValue
+	ParentMessageName string
+}
+
 type Model struct {
 	Name         string
 	Primitive    bool
@@ -181,6 +232,7 @@ type ModelField struct {
 	IsMap         bool
 	MapKeyField   *ModelField
 	MapValueField *ModelField
+	IsEnum        bool
 }
 
 type Service struct {
@@ -200,19 +252,27 @@ type ServiceMethod struct {
 func NewAPIContext() APIContext {
 	ctx := APIContext{}
 	ctx.modelLookup = make(map[string]*Model)
+	ctx.enumLookup = make(map[string]*Enum)
 
 	return ctx
 }
 
 type APIContext struct {
+	Enums       []*Enum
 	Models      []*Model
 	Services    []*Service
 	Imports     []Import
 	modelLookup map[string]*Model
+	enumLookup  map[string]*Enum
 }
 
 type Import struct {
 	Path string
+}
+
+func (ctx *APIContext) AddEnum(e *Enum) {
+	ctx.Enums = append(ctx.Enums, e)
+	ctx.enumLookup[e.Name] = e
 }
 
 func (ctx *APIContext) AddModel(m *Model) {
@@ -325,6 +385,24 @@ func CreateClientAPI(d *descriptor.FileDescriptorProto, generator *generator.Gen
 	ctx := NewAPIContext()
 	pkg := d.GetPackage()
 
+	// Parse all the enums
+
+	for _, e := range d.GetEnumType() {
+		enum := &Enum{
+			Name:              e.GetName(),
+			ParentMessageName: "",
+		}
+		for _, v := range e.GetValue() {
+			enum.Values = append(enum.Values, EnumValue{
+				EnumName:          e.GetName(),
+				Name:              *v.Name,
+				Value:             *v.Number,
+				ParentMessageName: "",
+			})
+		}
+		ctx.AddEnum(enum)
+	}
+
 	// Parse all Messages for generating typescript interfaces
 
 	for _, m := range d.GetMessageType() {
@@ -336,6 +414,21 @@ func CreateClientAPI(d *descriptor.FileDescriptorProto, generator *generator.Gen
 		}
 		ctx.AddModel(model)
 
+		for _, e := range m.GetEnumType() {
+			enum := &Enum{
+				Name:              e.GetName(),
+				ParentMessageName: m.GetName(),
+			}
+			for _, v := range e.GetValue() {
+				enum.Values = append(enum.Values, EnumValue{
+					EnumName:          e.GetName(),
+					Name:              *v.Name,
+					Value:             *v.Number,
+					ParentMessageName: m.GetName(),
+				})
+			}
+			ctx.AddEnum(enum)
+		}
 	}
 
 	// Parse all Services for generating typescript method interfaces and default client implementations
@@ -414,7 +507,7 @@ func newField(f *descriptor.FieldDescriptorProto,
 	m *descriptor.DescriptorProto,
 	d *descriptor.FileDescriptorProto,
 	gen *generator.Generator) ModelField {
-	dartType, internalType, jsonType := protoToDartType(f)
+	dartType, internalType, jsonType := protoToDartType(f, m)
 	fieldName := f.GetName()
 	jsonName := camelCase(fieldName)
 	name := camelCase(fieldName)
@@ -442,6 +535,7 @@ func newField(f *descriptor.FieldDescriptorProto,
 		}
 	}
 	field.IsMessage = f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE
+	field.IsEnum = f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM
 	field.IsRepeated = isRepeated(f)
 
 	return field
@@ -449,12 +543,17 @@ func newField(f *descriptor.FieldDescriptorProto,
 
 // generates the (Type, JSONType) tuple for a ModelField so marshal/unmarshal functions
 // will work when converting between TS interfaces and protobuf JSON.
-func protoToDartType(f *descriptor.FieldDescriptorProto) (string, string, string) {
+func protoToDartType(f *descriptor.FieldDescriptorProto, m *descriptor.DescriptorProto) (string, string, string) {
 	dartType := "String"
 	jsonType := "string"
 	internalType := "String"
 
 	switch f.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		name := f.GetTypeName()
+		dartType = removePkg(m.GetName()) + removePkg(name)
+		jsonType = "string"
+		break
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		dartType = "double"
 		jsonType = "number"
