@@ -110,13 +110,13 @@ class {{.Name}} {
 		{{else if .IsRepeated }}
 		json['{{.JSONName}}'] != null ? (json['{{.JSONName}}'] as List).cast<{{.InternalType}}>() : <{{.InternalType}}>[],
 		{{else if and (.IsMessage) (eq .Type "DateTime")}}
-		json['{{.JSONName}}'] != null ? null : {{.Type}}.tryParse(json['{{.JSONName}}']),
+		json['{{.JSONName}}'] == null ? null : {{.Type}}.tryParse(json['{{.JSONName}}']),
 		{{else if .IsMessage}}
-		json['{{.JSONName}}'] != null ? null : {{.Type}}.fromJson(json['{{.JSONName}}']),
+		json['{{.JSONName}}'] == null ? null : {{.Type}}.fromJson(json['{{.JSONName}}']),
 		{{else if .IsEnum}}
-		json['{{.JSONName}}'] != null ? null : from{{.Type}}JsonValue(json['{{.JSONName}}']),
+		json['{{.JSONName}}'] == null ? null : from{{.Type}}JsonValue(json['{{.JSONName}}']),
 		{{else}}
-		json['{{.JSONName}}'] != null ? null : json['{{.JSONName}}'] as {{.Type}}, 
+		json['{{.JSONName}}'] == null ? null : json['{{.JSONName}}'] as {{.Type}}, 
 		{{- end}}
 		{{- end}}
 		);	
