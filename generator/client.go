@@ -28,7 +28,6 @@ enum {{.ParentMessageName}}{{.Name}} {
 }
 
 String to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}} e) {
-	if (e == null) return null;
 	switch(e) {
 	{{- range .Values -}}
 		case {{.ParentMessageName}}{{.EnumName}}.{{.Name}}: return "{{.Name}}";
@@ -38,7 +37,6 @@ String to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}
 }
 
 {{.ParentMessageName}}{{.Name}} from{{.ParentMessageName}}{{.Name}}JsonValue(String j) {
-	if (j == null) return null;
 	{{- range .Values -}}
 	if (j == "{{.Name}}") return {{.ParentMessageName}}{{.EnumName}}.{{.Name}};
 	{{- end}}
@@ -64,10 +62,14 @@ class {{.Name}} {
 			{{if .IsMap}}
 			var {{.Name}}Map = new {{.Type}}();
 			(json['{{.JSONName}}'] as Map<String, dynamic>)?.forEach((key, val) {
+				if (val == null) {
+					{{.Name}}Map[key] = null;
+					return;
+				}
 				{{if .MapValueField.IsEnum}}
 				{{.Name}}Map[key] = from{{.MapValueField.Type}}JsonValue(val);
 				{{else if .MapValueField.IsMessage}}
-				{{.Name}}Map[key] = new {{.MapValueField.Type}}.fromJson(val as Map<String,dynamic>);
+				{{.Name}}Map[key] = {{.MapValueField.Type}}.fromJson(val as Map<String,dynamic>);
 				{{else}}
 				if (val is String) {
 					{{if eq .MapValueField.Type "double"}}
@@ -96,7 +98,7 @@ class {{.Name}} {
 		{{else if and .IsRepeated .IsMessage}}
 		json['{{.JSONName}}'] != null
           ? (json['{{.JSONName}}'] as List)
-              .map((d) => new {{.InternalType}}.fromJson(d))
+              .map((d) => {{.InternalType}}.fromJson(d))
               .toList()
 		  : <{{.InternalType}}>[],
 		{{else if and .IsRepeated .IsEnum}}
@@ -108,13 +110,13 @@ class {{.Name}} {
 		{{else if .IsRepeated }}
 		json['{{.JSONName}}'] != null ? (json['{{.JSONName}}'] as List).cast<{{.InternalType}}>() : <{{.InternalType}}>[],
 		{{else if and (.IsMessage) (eq .Type "DateTime")}}
-		{{.Type}}.tryParse(json['{{.JSONName}}']),
+		json['{{.JSONName}}'] != null ? null : {{.Type}}.tryParse(json['{{.JSONName}}']),
 		{{else if .IsMessage}}
-		new {{.Type}}.fromJson(json['{{.JSONName}}']),
+		json['{{.JSONName}}'] != null ? null : {{.Type}}.fromJson(json['{{.JSONName}}']),
 		{{else if .IsEnum}}
-		from{{.Type}}JsonValue(json['{{.JSONName}}']),
+		json['{{.JSONName}}'] != null ? null : from{{.Type}}JsonValue(json['{{.JSONName}}']),
 		{{else}}
-		json['{{.JSONName}}'] as {{.Type}}, 
+		json['{{.JSONName}}'] != null ? null : json['{{.JSONName}}'] as {{.Type}}, 
 		{{- end}}
 		{{- end}}
 		);	
@@ -124,7 +126,7 @@ class {{.Name}} {
 		var map = new Map<String, dynamic>();
     	{{- range .Fields -}}
 		{{- if .IsMap }}
-		map['{{.JSONName}}'] = json.decode(json.encode({{.Name}}));
+		map['{{.JSONName}}'] = {{.Name}} == null ? null : json.decode(json.encode({{.Name}}));
 		{{- else if and .IsRepeated .IsMessage}}
 		map['{{.JSONName}}'] = {{.Name}}?.map((l) => l.toJson())?.toList();
 		{{- else if and .IsRepeated .IsEnum}}
@@ -132,11 +134,11 @@ class {{.Name}} {
 		{{- else if .IsRepeated }}
 		map['{{.JSONName}}'] = {{.Name}}?.map((l) => l)?.toList();
 		{{- else if and (.IsMessage) (eq .Type "DateTime")}}
-		map['{{.JSONName}}'] = {{.Name}}.toIso8601String();
+		map['{{.JSONName}}'] = {{.Name}}?.toIso8601String();
 		{{- else if .IsMessage}}
-		map['{{.JSONName}}'] = {{.Name}}.toJson();
+		map['{{.JSONName}}'] = {{.Name}}?.toJson();
 		{{- else if .IsEnum}}
-		map['{{.JSONName}}'] = to{{.Type}}JsonValue({{.Name}});
+		map['{{.JSONName}}'] = {{.Name}} == null ? null : to{{.Type}}JsonValue({{.Name}});
 		{{- else}}
     	map['{{.JSONName}}'] = {{.Name}};
     	{{- end}}
@@ -191,7 +193,7 @@ class Default{{.Name}} implements {{.Name}} {
 	Exception twirpException(Response response) {
     	try {
       		var value = json.decode(response.body);
-      		return new TwirpJsonException.fromJson(value);
+      		return TwirpJsonException.fromJson(value);
     	} catch (e) {
       		return new TwirpException(response.body);
     	}
