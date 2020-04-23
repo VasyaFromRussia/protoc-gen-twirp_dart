@@ -28,6 +28,7 @@ enum {{.ParentMessageName}}{{.Name}} {
 }
 
 String to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}} e) {
+	if (e == null) return null;
 	switch(e) {
 	{{- range .Values -}}
 		case {{.ParentMessageName}}{{.EnumName}}.{{.Name}}: return "{{.Name}}";
@@ -37,6 +38,7 @@ String to{{.ParentMessageName}}{{.Name}}JsonValue({{.ParentMessageName}}{{.Name}
 }
 
 {{.ParentMessageName}}{{.Name}} from{{.ParentMessageName}}{{.Name}}JsonValue(String j) {
+	if (j == null) return null;
 	{{- range .Values -}}
 	if (j == "{{.Name}}") return {{.ParentMessageName}}{{.EnumName}}.{{.Name}};
 	{{- end}}
