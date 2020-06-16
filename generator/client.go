@@ -60,7 +60,7 @@ class {{.Name}} {
 	factory {{.Name}}.fromJson(Map<String,dynamic> json) {
 		{{- range .Fields -}}
 			{{if .IsMap}}
-			var {{.Name}}Map = new {{.Type}}();
+			final {{.Name}}Map = {{.Type}}();
 			(json['{{.JSONName}}'] as Map<String, dynamic>)?.forEach((key, val) {
 				if (val == null) {
 					{{.Name}}Map[key] = null;
@@ -91,7 +91,7 @@ class {{.Name}} {
 			{{end}}
 		{{end}}
 
-		return new {{.Name}}(
+		return {{.Name}}(
 		{{- range .Fields -}}
 		{{if .IsMap}}
 		{{.Name}}Map,
@@ -123,7 +123,7 @@ class {{.Name}} {
 	}
 
 	Map<String,dynamic>toJson() {
-		var map = new Map<String, dynamic>();
+		final map = <String, dynamic>{};
     	{{- range .Fields -}}
 		{{- if .IsMap }}
 		map['{{.JSONName}}'] = {{.Name}} == null ? null : json.decode(json.encode({{.Name}}));
@@ -168,7 +168,7 @@ class Default{{.Name}} implements {{.Name}} {
 
     Default{{.Name}}(this.hostname, {Requester requester}) {
 		if (requester == null) {
-      		_requester = new Requester(new Client());
+      		_requester = Requester(Client());
     	} else {
 			_requester = requester;
 		}
@@ -176,26 +176,26 @@ class Default{{.Name}} implements {{.Name}} {
 
     {{range .Methods}}
 	Future<{{.OutputType}}>{{.Name}}({{.InputType}} {{.InputArg}}) async {
-		var url = "${hostname}${_pathPrefix}{{.Path}}";
-		var uri = Uri.parse(url);
-    	var request = new Request('POST', uri);
+		final url = "${hostname}${_pathPrefix}{{.Path}}";
+		final uri = Uri.parse(url);
+    	final request = Request('POST', uri);
 		request.headers['Content-Type'] = 'application/json';
     	request.body = json.encode({{.InputArg}}.toJson());
-    	var response = await _requester.send(request);
+    	final response = await _requester.send(request);
 		if (response.statusCode != 200) {
      		throw twirpException(response);
     	}
-    	var value = json.decode(response.body);
+    	final value = json.decode(response.body);
     	return {{.OutputType}}.fromJson(value);
 	}
     {{end}}
 
 	Exception twirpException(Response response) {
     	try {
-      		var value = json.decode(response.body);
+      		final value = json.decode(response.body);
       		return TwirpJsonException.fromJson(value);
     	} catch (e) {
-      		return new TwirpException(response.body);
+      		return TwirpException(response.body);
     	}
   	}
 }
@@ -657,7 +657,7 @@ func parse(f ModelField, modelName string) string {
 		singularType := f.Type[0 : len(f.Type)-2] // strip array brackets from type
 
 		if f.Type == "Date" {
-			return fmt.Sprintf("%s.map((n) => new Date(n))", field)
+			return fmt.Sprintf("%s.map((n) => Date(n))", field)
 		}
 
 		if f.IsMessage {
@@ -666,7 +666,7 @@ func parse(f ModelField, modelName string) string {
 	}
 
 	if f.Type == "Date" {
-		return fmt.Sprintf("new Date(%s)", field)
+		return fmt.Sprintf("Date(%s)", field)
 	}
 
 	if f.IsMessage {
