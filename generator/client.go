@@ -61,7 +61,7 @@ class {{.Name}} {
 		{{- range .Fields -}}
 			{{if .IsMap}}
 			final {{.Name}}Map = {{.Type}}();
-			(json['{{.JSONName}}'] as Map<String, dynamic>)?.forEach((key, val) {
+			(json['{{.JSONNameFrom}}'] as Map<String, dynamic>)?.forEach((key, val) {
 				if (val == null) {
 					{{.Name}}Map[key] = null;
 					return;
@@ -96,27 +96,27 @@ class {{.Name}} {
 		{{if .IsMap}}
 		{{.Name}}Map,
 		{{else if and .IsRepeated .IsMessage}}
-		json['{{.JSONName}}'] != null
-          ? (json['{{.JSONName}}'] as List)
+		json['{{.JSONNameFrom}}'] != null
+          ? (json['{{.JSONNameFrom}}'] as List)
               .map((d) => {{.InternalType}}.fromJson(d))
               .toList()
 		  : <{{.InternalType}}>[],
 		{{else if and .IsRepeated .IsEnum}}
-		  json['{{.JSONName}}'] != null
-			? (json['{{.JSONName}}'] as List)
+		  json['{{.JSONNameFrom}}'] != null
+			? (json['{{.JSONNameFrom}}'] as List)
 				.map((d) => from{{.InternalType}}JsonValue(d))
 				.toList()
 			: <{{.InternalType}}>[],
 		{{else if .IsRepeated }}
-		json['{{.JSONName}}'] != null ? (json['{{.JSONName}}'] as List).cast<{{.InternalType}}>() : <{{.InternalType}}>[],
+		json['{{.JSONNameFrom}}'] != null ? (json['{{.JSONNameFrom}}'] as List).cast<{{.InternalType}}>() : <{{.InternalType}}>[],
 		{{else if and (.IsMessage) (eq .Type "DateTime")}}
-		json['{{.JSONName}}'] == null ? null : {{.Type}}.tryParse(json['{{.JSONName}}']),
+		json['{{.JSONNameFrom}}'] == null ? null : {{.Type}}.tryParse(json['{{.JSONNameFrom}}']),
 		{{else if .IsMessage}}
-		json['{{.JSONName}}'] == null ? null : {{.Type}}.fromJson(json['{{.JSONName}}']),
+		json['{{.JSONNameFrom}}'] == null ? null : {{.Type}}.fromJson(json['{{.JSONNameFrom}}']),
 		{{else if .IsEnum}}
-		json['{{.JSONName}}'] == null ? null : from{{.Type}}JsonValue(json['{{.JSONName}}']),
+		json['{{.JSONNameFrom}}'] == null ? null : from{{.Type}}JsonValue(json['{{.JSONNameFrom}}']),
 		{{else}}
-		json['{{.JSONName}}'] == null ? null : json['{{.JSONName}}'] as {{.Type}}, 
+		json['{{.JSONNameFrom}}'] == null ? null : json['{{.JSONNameFrom}}'] as {{.Type}}, 
 		{{- end}}
 		{{- end}}
 		);	
@@ -126,21 +126,21 @@ class {{.Name}} {
 		final map = <String, dynamic>{};
     	{{- range .Fields -}}
 		{{- if .IsMap }}
-		map['{{.JSONName}}'] = {{.Name}} == null ? null : json.decode(json.encode({{.Name}}));
+		map['{{.JSONNameTo}}'] = {{.Name}} == null ? null : json.decode(json.encode({{.Name}}));
 		{{- else if and .IsRepeated .IsMessage}}
-		map['{{.JSONName}}'] = {{.Name}}?.map((l) => l.toJson())?.toList();
+		map['{{.JSONNameTo}}'] = {{.Name}}?.map((l) => l.toJson())?.toList();
 		{{- else if and .IsRepeated .IsEnum}}
-		map['{{.JSONName}}'] = {{.Name}}?.map((l) => to{{.InternalType}}JsonValue(l))?.toList();
+		map['{{.JSONNameTo}}'] = {{.Name}}?.map((l) => to{{.InternalType}}JsonValue(l))?.toList();
 		{{- else if .IsRepeated }}
-		map['{{.JSONName}}'] = {{.Name}}?.map((l) => l)?.toList();
+		map['{{.JSONNameTo}}'] = {{.Name}}?.map((l) => l)?.toList();
 		{{- else if and (.IsMessage) (eq .Type "DateTime")}}
-		map['{{.JSONName}}'] = {{.Name}}?.toIso8601String();
+		map['{{.JSONNameTo}}'] = {{.Name}}?.toIso8601String();
 		{{- else if .IsMessage}}
-		map['{{.JSONName}}'] = {{.Name}}?.toJson();
+		map['{{.JSONNameTo}}'] = {{.Name}}?.toJson();
 		{{- else if .IsEnum}}
-		map['{{.JSONName}}'] = {{.Name}} == null ? null : to{{.Type}}JsonValue({{.Name}});
+		map['{{.JSONNameTo}}'] = {{.Name}} == null ? null : to{{.Type}}JsonValue({{.Name}});
 		{{- else}}
-    	map['{{.JSONName}}'] = {{.Name}};
+    	map['{{.JSONNameTo}}'] = {{.Name}};
     	{{- end}}
 		{{- end}}
 		return map;
@@ -229,7 +229,7 @@ type ModelField struct {
 	Name          string
 	Type          string
 	InternalType  string
-	JSONName      string
+	JSONNameTo    string
 	JSONType      string
 	IsMessage     bool
 	IsRepeated    bool
@@ -237,6 +237,7 @@ type ModelField struct {
 	MapKeyField   *ModelField
 	MapValueField *ModelField
 	IsEnum        bool
+	JSONNameFrom  string
 }
 
 type Service struct {
@@ -513,14 +514,16 @@ func newField(f *descriptor.FieldDescriptorProto,
 	gen *generator.Generator) ModelField {
 	dartType, internalType, jsonType := protoToDartType(f, m)
 	fieldName := f.GetName()
-	jsonName := fieldName
+	jsonNameFrom := fieldName
+	jsonNameTo := camelCase(fieldName)
 	name := camelCase(fieldName)
 
 	field := ModelField{
 		Name:         name,
 		Type:         dartType,
 		InternalType: internalType,
-		JSONName:     jsonName,
+		JSONNameFrom: jsonNameFrom,
+		JSONNameTo:   jsonNameTo,
 		JSONType:     jsonType,
 	}
 
@@ -648,8 +651,8 @@ func stringify(f ModelField) string {
 }
 
 func parse(f ModelField, modelName string) string {
-	field := "(((m as " + modelName + ")." + f.Name + ") ? (m as " + modelName + ")." + f.Name + " : (m as " + modelName + "JSON)." + f.JSONName + ")"
-	if strings.Compare(f.Name, f.JSONName) == 0 {
+	field := "(((m as " + modelName + ")." + f.Name + ") ? (m as " + modelName + ")." + f.Name + " : (m as " + modelName + "JSON)." + f.JSONNameFrom + ")"
+	if strings.Compare(f.Name, f.JSONNameFrom) == 0 {
 		field = "m." + f.Name
 	}
 
