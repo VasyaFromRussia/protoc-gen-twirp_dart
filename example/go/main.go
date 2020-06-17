@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/VasyaFromRussia/protoc-gen-twirp_dart/example/go/config/model"
-	config_service "github.com/VasyaFromRussia/protoc-gen-twirp_dart/example/go/config/service"
+	"github.com/ragnor-rs/protoc-gen-twirp_dart/example/go/config/model"
+	config_service "github.com/ragnor-rs/protoc-gen-twirp_dart/example/go/config/service"
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/twitchtv/twirp"

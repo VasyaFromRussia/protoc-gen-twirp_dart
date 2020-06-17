@@ -7,8 +7,8 @@ import (
 	fmt "fmt"
 	math "math"
 
-	_ "github.com/VasyaFromRussia/protoc-gen-twirp_dart/example/go/config/model"
 	proto "github.com/golang/protobuf/proto"
+	_ "github.com/ragnor-rs/protoc-gen-twirp_dart/example/go/config/model"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

@@ -513,7 +513,7 @@ func newField(f *descriptor.FieldDescriptorProto,
 	gen *generator.Generator) ModelField {
 	dartType, internalType, jsonType := protoToDartType(f, m)
 	fieldName := f.GetName()
-	jsonName := camelCase(fieldName)
+	jsonName := fieldName
 	name := camelCase(fieldName)
 
 	field := ModelField{
