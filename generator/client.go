@@ -27,6 +27,7 @@ enum {{.Name}} {
 	{{- end}}
 }
 
+
 String to{{.Name}}JsonValue({{.Name}} e) {
 	switch(e) {
 	{{- range .Values -}}
