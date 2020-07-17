@@ -47,6 +47,12 @@ String to{{.Name}}JsonValue({{.Name}} e) {
 
 {{- range .Models}}
 {{- if not .Primitive}}
+
+{{.OutputType}} parse{{.Name}}(String j) {
+	final value = json.decode(j);
+    return {{.OutputType}}.fromJson(value);
+}
+
 class {{.Name}} {
 
 	{{.Name}}(
@@ -185,9 +191,8 @@ class Default{{.Name}} implements {{.Name}} {
     	final response = await _requester.send(request);
 		if (response.statusCode != 200) {
      		throw twirpException(response);
-    	}
-    	final value = json.decode(response.body);
-    	return {{.OutputType}}.fromJson(value);
+		}
+		return compute(parse{{.Name}}, response.body);	
 	}
     {{end}}
 
