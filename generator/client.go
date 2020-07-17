@@ -192,7 +192,7 @@ class Default{{.Name}} implements {{.Name}} {
 		if (response.statusCode != 200) {
      		throw twirpException(response);
 		}
-		return compute(parse{{.Name}}, response.body);	
+		return compute(parse{{.OutputType}}, response.body);	
 	}
     {{end}}
 
@@ -297,6 +297,7 @@ func (ctx *APIContext) ApplyImports(d *descriptor.FileDescriptorProto) {
 	if len(ctx.Services) > 0 {
 		deps = append(deps, Import{"dart:async"})
 		deps = append(deps, Import{"package:http/http.dart"})
+		deps = append(deps, Import{"package:flutter/foundation.dart"})
 		deps = append(deps, Import{"package:requester/requester.dart"})
 		deps = append(deps, Import{"package:twirp_dart_core/twirp_dart_core.dart"})
 	}
