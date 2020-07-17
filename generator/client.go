@@ -49,7 +49,7 @@ String to{{.Name}}JsonValue({{.Name}} e) {
 {{- if not .Primitive}}
 
 {{.Name}} parse{{.Name}}(String j) {
-	final value = json.decode(j);
+	final value = json.decode(j) as Map<String, dynamic>;
     return {{.Name}}.fromJson(value);
 }
 
