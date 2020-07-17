@@ -181,9 +181,10 @@ class Default{{.Name}} implements {{.Name}} {
 		}
 	}
 
-    {{range .Methods}}
+	{{range .Methods}}
+	@override
 	Future<{{.OutputType}}>{{.Name}}({{.InputType}} {{.InputArg}}) async {
-		final url = "${hostname}${_pathPrefix}{{.Path}}";
+		final url = "$hostname${_pathPrefix}{{.Path}}";
 		final uri = Uri.parse(url);
     	final request = Request('POST', uri);
 		request.headers['Content-Type'] = 'application/json';
