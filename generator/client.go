@@ -48,9 +48,9 @@ String to{{.Name}}JsonValue({{.Name}} e) {
 {{- range .Models}}
 {{- if not .Primitive}}
 
-{{.OutputType}} parse{{.Name}}(String j) {
+{{.Name}} parse{{.Name}}(String j) {
 	final value = json.decode(j);
-    return {{.OutputType}}.fromJson(value);
+    return {{.Name}}.fromJson(value);
 }
 
 class {{.Name}} {
