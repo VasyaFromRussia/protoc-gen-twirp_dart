@@ -105,7 +105,7 @@ class {{.Name}} {
 		{{else if and .IsRepeated .IsMessage}}
 		json['{{.JSONNameFrom}}'] != null
           ? (json['{{.JSONNameFrom}}'] as List)
-              .map((d) => {{.InternalType}}.fromJson(d))
+              .map((Map<String, dynamic> d) => {{.InternalType}}.fromJson(d))
               .toList()
 		  : <{{.InternalType}}>[],
 		{{else if and .IsRepeated .IsEnum}}
