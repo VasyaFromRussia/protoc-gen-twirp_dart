@@ -119,7 +119,7 @@ class {{.Name}} {
 		{{else if and (.IsMessage) (eq .Type "DateTime")}}
 		json['{{.JSONNameFrom}}'] == null ? null : {{.Type}}.tryParse(json['{{.JSONNameFrom}}']),
 		{{else if .IsMessage}}
-		json['{{.JSONNameFrom}}'] == null ? null : {{.Type}}.fromJson(json['{{.JSONNameFrom}}']),
+		json['{{.JSONNameFrom}}'] == null ? null : {{.Type}}.fromJson(json['{{.JSONNameFrom}}'] as Map<String, dynamic>),
 		{{else if .IsEnum}}
 		json['{{.JSONNameFrom}}'] == null ? null : from{{.Type}}JsonValue(json['{{.JSONNameFrom}}']),
 		{{else}}
@@ -199,7 +199,7 @@ class Default{{.Name}} implements {{.Name}} {
 
 	Exception twirpException(Response response) {
     	try {
-      		final value = json.decode(response.body);
+      		final value = json.decode(response.body) as Map<String, dynamic>;
       		return TwirpJsonException.fromJson(value);
     	} catch (e) {
       		return TwirpException(response.body);
