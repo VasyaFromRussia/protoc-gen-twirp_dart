@@ -187,8 +187,8 @@ class Default{{.Name}} implements {{.Name}} {
 		final url = "$hostname${_pathPrefix}{{.Path}}";
 		final uri = Uri.parse(url);
     	final request = Request('POST', uri);
-		request.headers['Content-Type'] = 'application/json';
     	request.body = json.encode({{.InputArg}}.toJson());
+		request.headers['Content-Type'] = 'application/json'; // comes after body to fix https://github.com/dart-lang/http/issues/184
     	final response = await _requester.send(request);
 		if (response.statusCode != 200) {
      		throw twirpException(response);
