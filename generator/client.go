@@ -121,7 +121,7 @@ class {{.Name}} {
 		{{else if .IsMessage}}
 		json['{{.JSONNameFrom}}'] == null ? null : {{.Type}}.fromJson(json['{{.JSONNameFrom}}'] as Map<String, dynamic>),
 		{{else if .IsEnum}}
-		json['{{.JSONNameFrom}}'] == null ? null : from{{.Type}}JsonValue(json['{{.JSONNameFrom}}']),
+		json['{{.JSONNameFrom}}'] == null ? null : from{{.Type}}JsonValue(json['{{.JSONNameFrom}}'] as String),
 		{{else}}
 		json['{{.JSONNameFrom}}'] == null ? null : json['{{.JSONNameFrom}}'] as {{.Type}}, 
 		{{- end}}
@@ -195,7 +195,7 @@ class Default{{.Name}} implements {{.Name}} {
 		}
 		return compute(parse{{.OutputType}}, response.body);	
 	}
-    {{end}}
+{{end}}
 
 	Exception twirpException(Response response) {
     	try {
