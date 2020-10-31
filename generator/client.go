@@ -122,6 +122,10 @@ class {{.Name}} {
 		json['{{.JSONNameFrom}}'] == null ? null : {{.Type}}.fromJson(json['{{.JSONNameFrom}}'] as Map<String, dynamic>),
 		{{else if .IsEnum}}
 		json['{{.JSONNameFrom}}'] == null ? null : from{{.Type}}JsonValue(json['{{.JSONNameFrom}}'] as String),
+		{{- else if eq .Type "double"}}
+		json['{{.JSONNameFrom}}'] == null ? null : (json['{{.JSONNameFrom}}'] as num).toDouble(), 
+		{{- else if eq .Type "int"}}
+		json['{{.JSONNameFrom}}'] == null ? null : (json['{{.JSONNameFrom}}'] as num).toInt(), 
 		{{else}}
 		json['{{.JSONNameFrom}}'] == null ? null : json['{{.JSONNameFrom}}'] as {{.Type}}, 
 		{{- end}}
