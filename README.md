@@ -24,7 +24,7 @@ This plugin requires 2 Dart pub dependencies. In your pubspec.yaml specify:
 
 ## Usage
 
-    go get -u github.com/VasyaFromRussia/protoc-gen-twirp_dart
+    go get -u github.com/severgroup-tt/protoc-gen-twirp_dart
     protoc --twirp_dart_out=./example/dart_client ./example/service.proto
     
 All generated files will be placed relative to the specified output directory for the plugin.  
