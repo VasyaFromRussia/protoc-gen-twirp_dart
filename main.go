@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/VasyaFromRussia/protoc-gen-twirp_dart/generator"
 	plugin_go "github.com/gogo/protobuf/protoc-gen-gogo/plugin"
+	"github.com/severgroup-tt/protoc-gen-twirp_dart/generator"
 
 	gogogen "github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/golang/protobuf/proto"

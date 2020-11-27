@@ -30,7 +30,7 @@ import (
 
 	ctxsetters "github.com/twitchtv/twirp/ctxsetters"
 
-	config_model "github.com/ragnor-rs/protoc-gen-twirp_dart/example/go/config/model"
+	config_model "github.com/severgroup-tt/protoc-gen-twirp_dart/example/go/config/model"
 
 	// Imports only used by utility functions:
 

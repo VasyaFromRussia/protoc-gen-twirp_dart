@@ -8,7 +8,7 @@ import (
 	math "math"
 
 	proto "github.com/golang/protobuf/proto"
-	_ "github.com/ragnor-rs/protoc-gen-twirp_dart/example/go/config/model"
+	_ "github.com/severgroup-tt/protoc-gen-twirp_dart/example/go/config/model"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
